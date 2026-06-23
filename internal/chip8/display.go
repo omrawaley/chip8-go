@@ -21,12 +21,23 @@ func (d *Display) Clear() {
 	}
 }
 
-func (d *Display) GetPixel(index int) (bool, error) {
-	if index >= DisplayWidth*DisplayHeight {
-		return false, fmt.Errorf("display get pixel index %v out of bounds", index)
+func (d *Display) GetPixelRaw(index int) (bool, error) {
+	if index >= DisplayHeight*DisplayWidth {
+		return false, fmt.Errorf("display get pixel raw index %v out of bounds", index)
 	}
 
 	return d.data[index], nil
+}
+
+func (d *Display) GetPixel(x int, y int) (bool, error) {
+	if x > DisplayWidth {
+		return false, fmt.Errorf("display get pixel x %v out of bounds", x)
+	}
+	if y > DisplayHeight {
+		return false, fmt.Errorf("display get pixel y %v out of bounds", y)
+	}
+
+	return d.data[(y * DisplayWidth) + x], nil
 }
 
 func (d *Display) SetPixel(index int, val bool) error {

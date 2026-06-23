@@ -179,7 +179,7 @@ func (c *CPU) execute(m *Memory, d *Display, k *Keypad) error {
 
 				pixelPos := (int(yPos)+row)*DisplayWidth + (int(xPos) + col)
 
-				setFlag, err := d.GetPixel(pixelPos)
+				setFlag, err := d.GetPixelRaw(pixelPos)
 				if err != nil {
 					return fmt.Errorf("erroneous display read from instruction DRW Vx, Vy, byte: %w", err)
 				}
@@ -187,7 +187,7 @@ func (c *CPU) execute(m *Memory, d *Display, k *Keypad) error {
 					c.V[0xF] = 1
 				}
 
-				currPixel, err := d.GetPixel(pixelPos)
+				currPixel, err := d.GetPixelRaw(pixelPos)
 				if err != nil {
 					return fmt.Errorf("erroneous display read from instruction DRW Vx, Vy, byte: %w", err)
 				}
