@@ -6,7 +6,7 @@ This project was mostly written for myself so that I could learn Go and how to b
 
 ## Demo
 
-<video src="chip8-go-demo.mp4" width="50%" controls></video>
+https://github.com/user-attachments/assets/0aaba8f6-857f-4ec8-8881-251a7e12c83a
 
 ## Features
 
