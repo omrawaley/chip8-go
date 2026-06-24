@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"charm.land/bubbles/v2/filepicker"
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
@@ -22,6 +24,7 @@ const (
 
 type styles struct {
 	display lipgloss.Style
+	help    lipgloss.Style
 }
 
 func newStyles() (s styles) {
@@ -30,6 +33,43 @@ func newStyles() (s styles) {
 		Background(lipgloss.Color("#000000"))
 
 	return s
+}
+
+type keyMap struct {
+	Quit  key.Binding
+	Menu  key.Binding
+	Pause key.Binding
+	Help  key.Binding
+}
+
+func (k keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{k.Menu, k.Pause}
+}
+
+func (k keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{k.Menu, k.Pause},
+		{k.Quit, k.Help},
+	}
+}
+
+var keys = keyMap{
+	Quit: key.NewBinding(
+		key.WithKeys("ctrl+c", "esc"),
+		key.WithHelp("esc", "quit"),
+	),
+	Menu: key.NewBinding(
+		key.WithKeys("m"),
+		key.WithHelp("m", "menu"),
+	),
+	Pause: key.NewBinding(
+		key.WithKeys("p"),
+		key.WithHelp("p", "pause"),
+	),
+	Help: key.NewBinding(
+		key.WithKeys("h"),
+		key.WithHelp("h", "help"),
+	),
 }
 
 type TickMsg time.Time
@@ -44,18 +84,22 @@ type emulator struct {
 	styles       styles
 	filepicker   filepicker.Model
 	selectedFile string
+	help         help.Model
+	keys         keyMap
 }
 
 func newEmu() emulator {
 	e := emulator{
-		cpu:     chip8.NewCPU(),
-		memory:  chip8.NewMemory(),
-		display: chip8.NewDisplay(),
-		keypad:  chip8.NewKeypad(),
-		styles:  newStyles(),
+		cpu:        chip8.NewCPU(),
+		memory:     chip8.NewMemory(),
+		display:    chip8.NewDisplay(),
+		keypad:     chip8.NewKeypad(),
+		styles:     newStyles(),
+		filepicker: filepicker.New(),
+		help:       help.New(),
+		keys:       keys,
 	}
 
-	e.filepicker = filepicker.New()
 	e.filepicker.AllowedTypes = []string{".bin", ".ch8", ".c8"}
 	e.filepicker.CurrentDirectory, _ = os.UserHomeDir()
 
@@ -138,12 +182,6 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.String() {
-		case "ctrl+c":
-			return e, tea.Quit
-		case "p":
-			e.isPaused = !e.isPaused
-		case "m":
-			e.reset()
 		case "1", "2", "3", "4", "q", "w", "e", "r", "a", "s", "d", "f", "z", "x", "c", "v":
 			key, ok := e.chip8KeyFor(msg.String())
 			if !ok {
@@ -151,6 +189,16 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				e.keypad.SetKey(key, true)
 			}
+		}
+		switch {
+		case key.Matches(msg, e.keys.Quit):
+			return e, tea.Quit
+		case key.Matches(msg, e.keys.Menu):
+			e.reset()
+		case key.Matches(msg, e.keys.Pause):
+			e.isPaused = !e.isPaused
+		case key.Matches(msg, e.keys.Help):
+			e.help.ShowAll = !e.help.ShowAll
 		}
 
 	case tea.KeyReleaseMsg:
@@ -176,7 +224,7 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
-	if !e.isRunning {
+	if !e.isRunning || e.selectedFile == "" {
 		e.filepicker, cmd = e.filepicker.Update(msg)
 		if didSelect, path := e.filepicker.DidSelectFile(msg); didSelect {
 			e.selectedFile = path
@@ -199,11 +247,14 @@ func (e emulator) View() tea.View {
 	var s strings.Builder
 	if !e.isRunning {
 		if e.selectedFile == "" {
-			s.WriteString("Please pick a ROM file")
+			s.WriteString("Choose a CHIP-8 ROM file.")
 		} else {
-			s.WriteString("Selected file: " + e.filepicker.Styles.Selected.Render(e.selectedFile))
+			s.WriteString("Selected file: ")
+			s.WriteString(e.filepicker.Styles.Selected.Render(e.selectedFile))
 		}
-		s.WriteString("\n\n" + e.filepicker.View() + "\n")
+		s.WriteString("\n\n")
+		s.WriteString(e.filepicker.View())
+		s.WriteString("\n")
 	} else {
 		// Increment rows by 2 because 2 rows are represented by one Unicode character
 		for row := 0; row < chip8.DisplayHeight; row += 2 {
@@ -219,15 +270,26 @@ func (e emulator) View() tea.View {
 					s.WriteString(fullBlock)
 				} else {
 					// This is a non-breaking space character meaning the terminal won't strip it
+					// If it was a normal space then nothing would be printed
 					s.WriteString(space)
 				}
 			}
 			s.WriteString("\n")
 		}
 
+		// Only render the string with the display palette if it actually contains
+		// the display characters. For the file picker UI, use the native terminal
+		// colors instead (no styling)
+		temp := s.String()
+		s.Reset()
+		s.WriteString(e.styles.display.Render(temp))
 	}
 
-	content := e.styles.display.Render(s.String())
+	var helpView string
+	helpView = e.help.View(e.keys)
+
+	var content string
+	content = fmt.Sprintf("%s %s %s", s.String(), strings.Repeat("\n", 3), helpView)
 	v.SetContent(content)
 	return v
 }
@@ -237,7 +299,12 @@ func main() {
 
 	args := os.Args
 	if len(args) >= 2 {
-		e.loadProgram(args[1])
+		if args[1] != "" {
+			e.loadProgram(args[1])
+			e.isRunning = true
+		} else {
+			fmt.Println("invalid chip-8 rom")
+		}
 	}
 
 	p := tea.NewProgram(e)
