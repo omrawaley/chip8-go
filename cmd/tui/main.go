@@ -61,6 +61,15 @@ func newEmu() emulator {
 	return e
 }
 
+func (e *emulator) reset() {
+	e.isRunning = false
+	e.cpu = chip8.NewCPU()
+	e.memory = chip8.NewMemory()
+	e.display = chip8.NewDisplay()
+	e.keypad = chip8.NewKeypad()
+	e.selectedFile = ""
+}
+
 func (e *emulator) loadProgram(name string) error {
 	data, err := os.ReadFile(name)
 	if err != nil {
@@ -132,6 +141,8 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "k":
 			e.styles.display = e.styles.display.
 				Background(lipgloss.Color("#ff0000"))
+		case "m":
+			e.reset()
 		case "1", "2", "3", "4", "q", "w", "e", "r", "a", "s", "d", "f", "z", "x", "c", "v":
 			key, ok := e.chip8KeyFor(msg.String())
 			if !ok {
