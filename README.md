@@ -2,7 +2,7 @@
 
 A CHIP-8 emulator written in Go, featuring a TUI interface.
 
-This project was mostly written for myself so that I could learn Go and how to build TUI apps.
+This project was mostly written for myself so that I could learn Go and how to build TUI apps. I also built this for Hack Club Macondo.
 
 ## Demo
 
