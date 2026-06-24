@@ -7,6 +7,7 @@ const (
 	KeyTwo
 	KeyThree
 	KeyC
+	KeyFour
 	KeyFive
 	KeySix
 	KeyD

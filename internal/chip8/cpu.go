@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	pcStart              = 0x200
+	PCStart              = 0x200
 	instructionsPerFrame = 11
 )
 
@@ -22,9 +22,21 @@ type CPU struct {
 
 func NewCPU() *CPU {
 	return &CPU{
-		PC: pcStart,
+		PC: PCStart,
 	}
 }
+
+// func (c *CPU) Reset() {
+// 	for i := range(16) {
+// 		c.Stack[i] = 0
+// 		c.V[i] = 0
+// 	}
+// 	c.I = 0
+// 	c.PC = PCStart
+// 	c.SP = 0
+// 	c.DelayTimer = 0
+// 	c.SoundTimer = 0
+// }
 
 func (c *CPU) Tick(m *Memory, d *Display, k *Keypad) error {
 	for i := 0; i < instructionsPerFrame; i++ {
@@ -49,7 +61,7 @@ func (c *CPU) fetch(m *Memory) (uint16, error) {
 		return 0, fmt.Errorf("cannot fetch high byte at address 0x%04X: %w", c.PC, err)
 	}
 
-	lo, err := m.Read(c.PC)
+	lo, err := m.Read(c.PC + 1)
 	if err != nil {
 		return 0, fmt.Errorf("cannot fetch low byte at address 0x%04X: %w", c.PC, err)
 	}
@@ -160,7 +172,7 @@ func (c *CPU) execute(m *Memory, d *Display, k *Keypad) error {
 
 		c.V[0xF] = 0
 		for row := 0; row < int(n); row++ {
-			if int(yPos)+row >= DisplayWidth {
+			if int(yPos)+row >= DisplayHeight {
 				break
 			}
 
@@ -179,18 +191,14 @@ func (c *CPU) execute(m *Memory, d *Display, k *Keypad) error {
 
 				pixelPos := (int(yPos)+row)*DisplayWidth + (int(xPos) + col)
 
-				setFlag, err := d.GetPixelRaw(pixelPos)
-				if err != nil {
-					return fmt.Errorf("erroneous display read from instruction DRW Vx, Vy, byte: %w", err)
-				}
-				if setFlag {
-					c.V[0xF] = 1
-				}
-
 				currPixel, err := d.GetPixelRaw(pixelPos)
 				if err != nil {
 					return fmt.Errorf("erroneous display read from instruction DRW Vx, Vy, byte: %w", err)
 				}
+				if currPixel {
+					c.V[0xF] = 1
+				}
+
 				if err := d.SetPixel(pixelPos, !currPixel); err != nil {
 					return fmt.Errorf("erroneous display write from instruction DRW Vx, Vy, byte: %w", err)
 				}
@@ -214,6 +222,17 @@ func (c *CPU) execute(m *Memory, d *Display, k *Keypad) error {
 			case 0x7: // LD Vx, DT
 				c.V[x] = c.DelayTimer
 			case 0xA: // LD Vx, K
+				var pressed bool
+				for i := range(NumKeys) {
+					if k.GetKey(i) {
+						c.V[x] = byte(i)
+						pressed = true
+						break
+					}
+				}
+				if !pressed {
+					c.PC -= 2
+				}
 			}
 		case 0x1:
 			switch n {
