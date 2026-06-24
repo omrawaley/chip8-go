@@ -39,9 +39,9 @@ See `cmd/tui/main.go` to understand how to implement your own frontend.
 
 Here are some related projects of mine:
 
-[Game Boy Emulator (C++)](https://github.com/omrawaley/gameboy-emulator)
-[CHIP-8 emulator, debugger, and disassembler (C++)](https://github.com/omrawaley/chip-8-emulator)
-[CHIP-8 emulator rewrite (Rust)](https://github.com/omrawaley/chip8-emulator-rust) (yes I rewrote it in Rust lol)
+- [Game Boy Emulator (C++)](https://github.com/omrawaley/gameboy-emulator)
+- [CHIP-8 emulator, debugger, and disassembler (C++)](https://github.com/omrawaley/chip-8-emulator)
+- [CHIP-8 emulator rewrite (Rust)](https://github.com/omrawaley/chip8-emulator-rust)
 
 ## License
 
