@@ -1,3 +1,8 @@
+//
+// Copyright (c) 2026 Om Rawaley. All rights reserved.
+// Licensed under the MIT license. See LICENSE.md file in the project root for details.
+//
+
 package main
 
 import (
