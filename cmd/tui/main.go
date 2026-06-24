@@ -289,7 +289,7 @@ func (e emulator) View() tea.View {
 	helpView = e.help.View(e.keys)
 
 	var content string
-	content = fmt.Sprintf("%s %s %s", s.String(), strings.Repeat("\n", 3), helpView)
+	content = fmt.Sprintf("%s %s %s", s.String(), strings.Repeat("\n", 2), helpView)
 	v.SetContent(content)
 	return v
 }
