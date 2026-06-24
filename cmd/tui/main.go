@@ -36,6 +36,7 @@ type TickMsg time.Time
 
 type emulator struct {
 	isRunning    bool
+	isPaused     bool
 	cpu          *chip8.CPU
 	memory       *chip8.Memory
 	display      *chip8.Display
@@ -63,6 +64,7 @@ func newEmu() emulator {
 
 func (e *emulator) reset() {
 	e.isRunning = false
+	e.isPaused = false
 	e.cpu = chip8.NewCPU()
 	e.memory = chip8.NewMemory()
 	e.display = chip8.NewDisplay()
@@ -138,9 +140,8 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return e, tea.Quit
-		case "k":
-			e.styles.display = e.styles.display.
-				Background(lipgloss.Color("#ff0000"))
+		case "p":
+			e.isPaused = !e.isPaused
 		case "m":
 			e.reset()
 		case "1", "2", "3", "4", "q", "w", "e", "r", "a", "s", "d", "f", "z", "x", "c", "v":
@@ -164,7 +165,7 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case TickMsg:
-		if e.isRunning {
+		if e.isRunning && !e.isPaused {
 			err := e.cpu.Tick(e.memory, e.display, e.keypad)
 			if err != nil {
 				fmt.Println(err)
