@@ -23,7 +23,11 @@ Firstly, install [Go](https://go.dev/doc/install) on your machine.
 
 Then, to compile chip8-go, run `go build cmd/tui/main.go`.
 
+## Usage
+
 Now you can execute the binary to launch the program (e.g. `./chip-8`).
+
+It takes an optional argument specifying the path to a ROM.
 
 ## Custom Frontends
 
