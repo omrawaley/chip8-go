@@ -48,8 +48,8 @@ func (k keyMap) ShortHelp() []key.Binding {
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Menu, k.Pause},
-		{k.Quit, k.Help},
+		{k.Menu, k.Help},
+		{k.Pause, k.Quit},
 	}
 }
 
@@ -73,19 +73,21 @@ var keys = keyMap{
 }
 
 type TickMsg time.Time
+type ReleaseKeyMsg time.Time
 
 type emulator struct {
-	isRunning    bool
-	isPaused     bool
-	cpu          *chip8.CPU
-	memory       *chip8.Memory
-	display      *chip8.Display
-	keypad       *chip8.Keypad
-	styles       styles
-	filepicker   filepicker.Model
-	selectedFile string
-	help         help.Model
-	keys         keyMap
+	isRunning           bool
+	isPaused            bool
+	cpu                 *chip8.CPU
+	memory              *chip8.Memory
+	display             *chip8.Display
+	keypad              *chip8.Keypad
+	styles              styles
+	filepicker          filepicker.Model
+	selectedFile        string
+	help                help.Model
+	keys                keyMap
+	supportsKeyReleases bool
 }
 
 func newEmu() emulator {
@@ -132,6 +134,12 @@ func (e *emulator) loadProgram(name string) error {
 func poll() tea.Cmd {
 	return tea.Tick(time.Second/60, func(t time.Time) tea.Msg {
 		return TickMsg(t)
+	})
+}
+
+func releaseKey() tea.Cmd {
+	return tea.Tick(time.Millisecond*150, func(t time.Time) tea.Msg {
+		return ReleaseKeyMsg(t)
 	})
 }
 
@@ -188,6 +196,11 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return e, nil
 			} else {
 				e.keypad.SetKey(key, true)
+				if e.supportsKeyReleases {
+					return e, nil
+				} else {
+					return e, releaseKey()
+				}
 			}
 		}
 		switch {
@@ -199,6 +212,13 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			e.isPaused = !e.isPaused
 		case key.Matches(msg, e.keys.Help):
 			e.help.ShowAll = !e.help.ShowAll
+		}
+
+	case tea.KeyboardEnhancementsMsg:
+		{
+			if msg.SupportsEventTypes() {
+				e.supportsKeyReleases = true
+			}
 		}
 
 	case tea.KeyReleaseMsg:
@@ -221,6 +241,14 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return e, poll()
+
+	case ReleaseKeyMsg:
+		if e.isRunning && !e.isPaused {
+			for i := range chip8.NumKeys {
+				e.keypad.SetKey(i, false)
+			}
+		}
+		return e, nil
 	}
 
 	var cmd tea.Cmd

@@ -26,18 +26,6 @@ func NewCPU() *CPU {
 	}
 }
 
-// func (c *CPU) Reset() {
-// 	for i := range(16) {
-// 		c.Stack[i] = 0
-// 		c.V[i] = 0
-// 	}
-// 	c.I = 0
-// 	c.PC = PCStart
-// 	c.SP = 0
-// 	c.DelayTimer = 0
-// 	c.SoundTimer = 0
-// }
-
 func (c *CPU) Tick(m *Memory, d *Display, k *Keypad) error {
 	for i := 0; i < instructionsPerFrame; i++ {
 		if err := c.execute(m, d, k); err != nil {
