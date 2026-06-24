@@ -21,7 +21,7 @@ https://github.com/user-attachments/assets/0aaba8f6-857f-4ec8-8881-251a7e12c83a
 
 Firstly, install [Go](https://go.dev/doc/install) on your machine.
 
-Then, to compile chip8-go, run `go build cmd/tui/main.go`.
+Then, to compile chip8-go, run `go build ./cmd/tui`.
 
 ## Usage
 
