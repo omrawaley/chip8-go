@@ -17,11 +17,29 @@ https://github.com/user-attachments/assets/0aaba8f6-857f-4ec8-8881-251a7e12c83a
 - Interactive help menu
 - Customizable display palette
 
-## Installation
+## Building
+
+### Manual
 
 Firstly, install [Go](https://go.dev/doc/install) on your machine.
 
 Then, to compile chip8-go, run `go build ./cmd/tui`.
+
+### Automatic
+
+To automatically compile binaries for all operating systems and architectures, run the `build.bash` script:
+
+```bash
+chmod +x ./build.bash
+./build.bash
+```
+
+A `clean.bash` script is also provided to delete all binaries:
+
+```bash
+chmod +x ./clean.bash
+./clean.bash
+```
 
 ## Usage
 
