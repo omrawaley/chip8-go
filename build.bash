@@ -2,7 +2,7 @@
 set -e
 
 app_name="chip8-go"
-version="V0.1.1"
+version="V1.0.0"
 
 src_path="./cmd/tui"
 output_dir="./bin"
