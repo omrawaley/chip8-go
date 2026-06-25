@@ -1,5 +1,7 @@
 # chip-8 go
 
+<img width="1000" height="" alt="chip8-go" src="https://github.com/user-attachments/assets/680c982f-ae71-4226-8e11-4978a045475c" />
+
 A CHIP-8 emulator written in Go, featuring a TUI interface.
 
 This project was mostly written for myself so that I could learn Go and how to build TUI apps. I also built this for Hack Club Macondo.
