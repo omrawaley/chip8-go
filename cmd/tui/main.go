@@ -7,6 +7,8 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"image/png"
 	"os"
 	"strings"
 	"time"
@@ -41,19 +43,20 @@ func newStyles() (s styles) {
 }
 
 type keyMap struct {
-	Quit  key.Binding
-	Menu  key.Binding
-	Pause key.Binding
-	Help  key.Binding
+	Quit       key.Binding
+	Menu       key.Binding
+	Pause      key.Binding
+	Help       key.Binding
+	Screenshot key.Binding
 }
 
 func (k keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Menu, k.Pause}
+	return []key.Binding{k.Menu, k.Pause, k.Screenshot}
 }
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Menu, k.Help},
+		{k.Menu, k.Help, k.Screenshot},
 		{k.Pause, k.Quit},
 	}
 }
@@ -74,6 +77,10 @@ var keys = keyMap{
 	Help: key.NewBinding(
 		key.WithKeys("h"),
 		key.WithHelp("h", "help"),
+	),
+	Screenshot: key.NewBinding(
+		key.WithKeys("o"),
+		key.WithHelp("o", "screenshot"),
 	),
 }
 
@@ -131,6 +138,41 @@ func (e *emulator) loadProgram(name string) error {
 
 	for i := range len(data) {
 		e.memory.Write(uint16(i+chip8.PCStart), data[i])
+	}
+
+	return nil
+}
+
+func (e *emulator) takeScreenshot() error {
+	width := chip8.DisplayWidth
+	height := chip8.DisplayHeight
+
+	topLeft := image.Point{0, 0}
+	bottomRight := image.Point{width, height}
+
+	img := image.NewRGBA(image.Rectangle{topLeft, bottomRight})
+
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			on, err := e.display.GetPixel(x, y)
+			if err != nil {
+				return fmt.Errorf("could not get display data: %w", err)
+			} else if on {
+				img.Set(x, y, e.styles.display.GetForeground())
+			} else {
+				img.Set(x, y, e.styles.display.GetBackground())
+			}
+		}
+	}
+
+	file, err := os.Create("screenshot.png")
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	if err := png.Encode(file, img); err != nil {
+		return fmt.Errorf("failed to encode png: %w", err)
 	}
 
 	return nil
@@ -217,6 +259,12 @@ func (e emulator) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			e.isPaused = !e.isPaused
 		case key.Matches(msg, e.keys.Help):
 			e.help.ShowAll = !e.help.ShowAll
+		case key.Matches(msg, e.keys.Screenshot):
+			if e.isRunning {
+				if err := e.takeScreenshot(); err != nil {
+					fmt.Println("failed to take screenshot: %w", err)
+				}
+			}
 		}
 
 	case tea.KeyboardEnhancementsMsg:
